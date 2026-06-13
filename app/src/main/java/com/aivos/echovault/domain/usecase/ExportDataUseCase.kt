@@ -37,9 +37,11 @@ class ExportDataUseCase @Inject constructor(private val repository: ClipboardRep
         return buildString {
             appendLine("id,timestamp,contentType,charCount,isFavorite,content")
             entries.forEach { e ->
-                val escaped = e.content.replace(""", """").replace("\n", "\\n")
+                val escaped = e.content
+                    .replace('"', '\u0022'.toString().repeat(2)[0].code.toChar().toString() + '\u0022')
+                    .replace('\n', '\\' + "n")
                 val ts = sdf.format(Date(e.timestamp))
-                appendLine("${e.id},\"$ts\",${e.contentType},${e.charCount},${e.isFavorite},\"$escaped\"")
+                appendLine(e.id.toString() + "," + ts + "," + e.contentType + "," + e.charCount + "," + e.isFavorite + "," + escaped)
             }
         }
     }
@@ -48,10 +50,7 @@ class ExportDataUseCase @Inject constructor(private val repository: ClipboardRep
         val gson = GsonBuilder().create()
         val entries = gson.fromJson(json, Array<ClipboardEntryEntity>::class.java)
         var count = 0
-        entries.forEach { e ->
-            repository.addEntry(e.content)
-            count++
-        }
+        entries.forEach { e -> repository.addEntry(e.content); count++ }
         return count
     }
 }
