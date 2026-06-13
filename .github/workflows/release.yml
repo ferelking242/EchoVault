@@ -1,73 +1,49 @@
 name: Release
 
-  on:
-    push:
-      tags:
-        - 'v*'
+on:
+  push:
+    tags:
+      - 'v*'
 
-  jobs:
-    release:
-      name: Create Release
-      runs-on: ubuntu-latest
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
 
-      steps:
-        - name: Checkout code
-          uses: actions/checkout@v4
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-        - name: Set up JDK 17
-          uses: actions/setup-java@v4
-          with:
-            java-version: '17'
-            distribution: 'temurin'
-            cache: gradle
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
 
-        - name: Grant execute permission for gradlew
-          run: chmod +x gradlew
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
 
-        - name: Create keystore
-          run: |
-            keytool -genkey -v -keystore app/keystore.jks \
-              -alias echovault \
-              -keyalg RSA \
-              -keysize 2048 \
-              -validity 10000 \
-              -storepass echovault123 \
-              -keypass echovault123 \
-              -dname "CN=EchoVault, OU=AIVOS, O=AIVOS, L=Paris, ST=IDF, C=FR"
+      - name: Create keystore
+        run: |
+          keytool -genkey -v -keystore app/keystore.jks -alias echovault -keyalg RSA -keysize 2048 -validity 10000 -storepass echovault123 -keypass echovault123 -dname "CN=EchoVault, OU=AIVOS, O=AIVOS, L=Paris, ST=IDF, C=FR"
 
-        - name: Build Release APK
-          run: ./gradlew assembleRelease --no-daemon
-          env:
-            KEYSTORE_PASSWORD: echovault123
-            KEY_ALIAS: echovault
-            KEY_PASSWORD: echovault123
+      - name: Build Release APK
+        run: ./gradlew assembleRelease --no-daemon
+        env:
+          KEYSTORE_PASSWORD: echovault123
+          KEY_ALIAS: echovault
+          KEY_PASSWORD: echovault123
 
-        - name: Get version from tag
-          id: get_version
-          run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-
-        - name: Create GitHub Release
-          uses: softprops/action-gh-release@v2
-          with:
-            tag_name: ${{ github.ref_name }}
-            name: "EchoVault ${{ steps.get_version.outputs.VERSION }}"
-            body: |
-              ## EchoVault ${{ steps.get_version.outputs.VERSION }}
-              
-              ### Features
-              - Unlimited clipboard history (text, URLs, emails, OTPs, code)
-              - Biometric lock (fingerprint + face ID)
-              - Encrypted storage with AndroidX Security Crypto
-              - Material 3 UI — dark & light mode
-              - Background service with boot persistence
-              - Export to TXT, JSON, CSV
-              - Statistics & weekly activity chart
-              
-              ### Requirements
-              Android 8.0+ (API 26)
-            files: app/build/outputs/apk/release/*.apk
-            draft: false
-            prerelease: false
-          env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: EchoVault ${{ github.ref_name }}
+          body: |
+            ## EchoVault ${{ github.ref_name }}
+            Biometric security, encrypted storage, Material 3 UI, clipboard history manager.
+          files: app/build/outputs/apk/release/*.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
