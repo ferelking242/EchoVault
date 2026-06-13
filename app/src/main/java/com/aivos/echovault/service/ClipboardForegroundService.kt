@@ -3,6 +3,7 @@ package com.aivos.echovault.service
   import android.app.*
   import android.content.*
   import android.os.*
+  import android.util.Log
   import androidx.core.app.NotificationCompat
   import com.aivos.echovault.EchoVaultApp
   import com.aivos.echovault.MainActivity
@@ -36,8 +37,11 @@ package com.aivos.echovault.service
                   if (text.isBlank() || text == lastContent) return@launch
                   lastContent = text
                   repository.addEntry(text)
+              } catch (e: SecurityException) {
+                  // Android 10+: background services cannot read clipboard — MainActivity handles this
+                  Log.w("EchoVault", "Service clipboard blocked (expected on API 29+): ${e.message}")
               } catch (e: Exception) {
-                  // Silent failure — clipboard access may be restricted
+                  Log.e("EchoVault", "Service clipboard error", e)
               }
           }
       }

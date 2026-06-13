@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-  <resources>
-      <string name="app_name">EchoVault</string>
-      <string name="notification_title">EchoVault</string>
-      <string name="notification_text">EchoVault is protecting your clipboard history</string>
-      <string name="channel_name">EchoVault Service</string>
-      <string name="biometric_title">EchoVault</string>
-      <string name="biometric_subtitle">Unlock your clipboard history</string>
-      <string name="biometric_description">Use biometrics to access EchoVault</string>
-  </resources>
+<resources>
+    <string name="app_name">EchoVault</string>
+    <string name="notification_title">EchoVault</string>
+    <string name="notification_text">EchoVault protège ton historique clipboard</string>
+    <string name="channel_name">EchoVault Service</string>
+    <string name="biometric_title">EchoVault</string>
+    <string name="biometric_subtitle">Déverrouille ton historique clipboard</string>
+    <string name="biometric_description">Utilise la biométrie pour accéder à EchoVault</string>
+    <string name="accessibility_service_description">EchoVault utilise le service d\'accessibilité uniquement pour capturer le contenu du presse-papiers en arrière-plan. Aucune donnée d\'écran, de frappe clavier ou de mot de passe n\'est collectée.</string>
+    <string name="device_admin_description">Protège EchoVault contre la désinstallation non autorisée et les arrêts forcés.</string>
+</resources>

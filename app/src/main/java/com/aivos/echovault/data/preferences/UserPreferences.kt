@@ -24,6 +24,7 @@ package com.aivos.echovault.data.preferences
           val ENCRYPTION_ENABLED = booleanPreferencesKey("encryption_enabled")
           val LOCK_ON_BACKGROUND = booleanPreferencesKey("lock_on_background")
           val FIRST_LAUNCH = booleanPreferencesKey("first_launch")
+          val ONBOARDING_DONE = booleanPreferencesKey("onboarding_done")
       }
 
       val darkMode: Flow<Boolean> = context.dataStore.data
@@ -50,10 +51,15 @@ package com.aivos.echovault.data.preferences
           .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
           .map { it[Keys.FIRST_LAUNCH] ?: true }
 
+      val onboardingDone: Flow<Boolean> = context.dataStore.data
+          .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
+          .map { it[Keys.ONBOARDING_DONE] ?: false }
+
       suspend fun setDarkMode(value: Boolean) = context.dataStore.edit { it[Keys.DARK_MODE] = value }
       suspend fun setBiometricEnabled(value: Boolean) = context.dataStore.edit { it[Keys.BIOMETRIC_ENABLED] = value }
       suspend fun setMonitoringEnabled(value: Boolean) = context.dataStore.edit { it[Keys.MONITORING_ENABLED] = value }
       suspend fun setEncryptionEnabled(value: Boolean) = context.dataStore.edit { it[Keys.ENCRYPTION_ENABLED] = value }
       suspend fun setLockOnBackground(value: Boolean) = context.dataStore.edit { it[Keys.LOCK_ON_BACKGROUND] = value }
       suspend fun setFirstLaunch(value: Boolean) = context.dataStore.edit { it[Keys.FIRST_LAUNCH] = value }
+      suspend fun setOnboardingDone(value: Boolean) = context.dataStore.edit { it[Keys.ONBOARDING_DONE] = value }
   }

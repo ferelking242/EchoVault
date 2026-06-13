@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Sécurité réseau maximale : EchoVault n'a aucun accès réseau.
+    Aucune donnée ne quitte l'appareil.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <!-- Aucune autorité de certification autorisée = aucun accès réseau possible -->
+        </trust-anchors>
+    </base-config>
+</network-security-config>

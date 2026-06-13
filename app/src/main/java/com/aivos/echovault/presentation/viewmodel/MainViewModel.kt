@@ -25,6 +25,9 @@ package com.aivos.echovault.presentation.viewmodel
       val biometricEnabled: StateFlow<Boolean> = preferences.biometricEnabled
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
+      val onboardingDone: StateFlow<Boolean> = preferences.onboardingDone
+          .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
       private val _isAppLocked = MutableStateFlow(true)
       val isAppLocked: StateFlow<Boolean> = _isAppLocked.asStateFlow()
 
@@ -38,6 +41,10 @@ package com.aivos.echovault.presentation.viewmodel
       }
 
       fun unlock() { _isAppLocked.value = false }
+
+      fun completeOnboarding() {
+          viewModelScope.launch { preferences.setOnboardingDone(true) }
+      }
 
       fun onAppResume() {
           viewModelScope.launch {

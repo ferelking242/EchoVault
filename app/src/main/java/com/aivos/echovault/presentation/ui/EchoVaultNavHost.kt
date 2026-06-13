@@ -31,8 +31,15 @@ package com.aivos.echovault.presentation.ui
   fun EchoVaultNavHost(
       isLocked: Boolean,
       onUnlock: () -> Unit,
+      onboardingDone: Boolean,
+      onOnboardingComplete: () -> Unit,
       viewModel: MainViewModel
   ) {
+      if (!onboardingDone) {
+          OnboardingScreen(onComplete = onOnboardingComplete)
+          return
+      }
+
       if (isLocked) {
           LockScreen(onUnlock = onUnlock)
           return
