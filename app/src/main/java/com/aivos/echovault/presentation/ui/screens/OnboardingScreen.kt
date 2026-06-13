@@ -35,6 +35,8 @@ import com.aivos.echovault.util.PermissionHelper
 fun OnboardingScreen(onComplete: () -> Unit) {
     val context = LocalContext.current
     var currentStep by remember { mutableIntStateOf(0) }
+    // Sub-step for accessibility on Android 13+ : 0 = unlock restricted, 1 = open accessibility
+    var accessibilitySubStep by remember { mutableIntStateOf(0) }
 
     val steps = listOf(
         OnboardingStep.Welcome,
@@ -63,6 +65,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .padding(32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(0.dp)
@@ -101,7 +104,45 @@ fun OnboardingScreen(onComplete: () -> Unit) {
 
             Text(step.title, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
             Spacer(Modifier.height(12.dp))
-            Text(step.description, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurface.copy(0.65f), lineHeight = 22.sp)
+
+            // Special description for Accessibility step on Android 13+
+            if (step == OnboardingStep.Accessibility && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                Text(
+                    "Sur Android 13+ et Samsung, il y a 2 étapes obligatoires :",
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurface.copy(0.65f)
+                )
+                Spacer(Modifier.height(16.dp))
+
+                // Step 1 card
+                AccessibilityStepCard(
+                    number = "1",
+                    title = "Débloquer les paramètres restreints",
+                    description = "Paramètres → Apps → EchoVault\n→ menu ⋮ (3 points) → \"Autoriser les paramètres restreints\"",
+                    done = accessibilitySubStep >= 1,
+                    color = if (accessibilitySubStep >= 1) EchoGreen else EchoViolet
+                )
+
+                Spacer(Modifier.height(10.dp))
+
+                // Step 2 card
+                AccessibilityStepCard(
+                    number = "2",
+                    title = "Activer le service d'accessibilité",
+                    description = "Accessibilité → Applications installées → EchoVault → Activer",
+                    done = false,
+                    color = if (accessibilitySubStep >= 1) EchoViolet else MaterialTheme.colorScheme.outline
+                )
+            } else {
+                Text(
+                    step.description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurface.copy(0.65f),
+                    lineHeight = 22.sp
+                )
+            }
 
             if (step.warning != null) {
                 Spacer(Modifier.height(16.dp))
@@ -119,67 +160,176 @@ fun OnboardingScreen(onComplete: () -> Unit) {
 
             Spacer(Modifier.height(36.dp))
 
-            // Action button
-            Button(
-                onClick = {
-                    when (step) {
-                        OnboardingStep.Welcome -> currentStep++
-                        OnboardingStep.Notification -> {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                notifLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-                            } else {
-                                currentStep++
+            // Action button(s)
+            if (step == OnboardingStep.Accessibility && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                // Two-button flow for Android 13+
+                if (accessibilitySubStep == 0) {
+                    // Sub-step 1: Open App Info so user can allow restricted settings
+                    Button(
+                        onClick = {
+                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                data = Uri.fromParts("package", context.packageName, null)
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
                             }
-                        }
-                        OnboardingStep.Accessibility -> {
+                            context.startActivity(intent)
+                            // Advance sub-step after launching
+                            accessibilitySubStep = 1
+                        },
+                        modifier = Modifier.fillMaxWidth().height(52.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = EchoViolet)
+                    ) {
+                        Icon(Icons.Filled.Settings, null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Étape 1 : Ouvrir les infos de l'app", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    OutlinedButton(
+                        onClick = { accessibilitySubStep = 1 },
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Text("Déjà débloqué → passer à l'étape 2", style = MaterialTheme.typography.bodyMedium)
+                    }
+                } else {
+                    // Sub-step 2: Open Accessibility settings
+                    Button(
+                        onClick = {
                             context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
                                 flags = Intent.FLAG_ACTIVITY_NEW_TASK
                             })
-                        }
-                        OnboardingStep.BatteryOptimization -> {
-                            try {
-                                val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
-                                    Uri.parse("package:${context.packageName}"))
-                                context.startActivity(intent)
-                            } catch (e: Exception) {
-                                context.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
-                            }
-                        }
-                        OnboardingStep.DeviceAdmin -> {
-                            val adminComponent = ComponentName(context, EchoVaultDeviceAdminReceiver::class.java)
-                            val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN).apply {
-                                putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComponent)
-                                putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION,
-                                    "Nécessaire pour protéger EchoVault contre les arrêts forcés et la désinstallation non autorisée.")
-                            }
-                            overlayLauncher.launch(intent)
-                        }
-                        OnboardingStep.Done -> onComplete()
+                        },
+                        modifier = Modifier.fillMaxWidth().height(52.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = EchoViolet)
+                    ) {
+                        Icon(Icons.Filled.Accessibility, null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Étape 2 : Ouvrir Accessibilité", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                     }
-                },
-                modifier = Modifier.fillMaxWidth().height(52.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = step.color)
-            ) {
-                Text(step.buttonText, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-            }
-
-            // Skip button for optional steps
-            if (step.skippable && step != OnboardingStep.Done) {
-                Spacer(Modifier.height(12.dp))
-                TextButton(onClick = { currentStep++ }) {
-                    Text("Passer cette étape", color = MaterialTheme.colorScheme.onSurface.copy(0.5f))
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedButton(
+                        onClick = { accessibilitySubStep = 0 },
+                        modifier = Modifier.fillMaxWidth().height(44.dp),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Icon(Icons.Filled.ArrowBack, null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Retour à l'étape 1", style = MaterialTheme.typography.bodyMedium)
+                    }
                 }
-            }
 
-            // "Already done" button for steps requiring external settings
-            if (step == OnboardingStep.Accessibility || step == OnboardingStep.BatteryOptimization) {
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(8.dp))
                 TextButton(onClick = { currentStep++ }) {
                     Icon(Icons.Filled.CheckCircle, null, modifier = Modifier.size(16.dp), tint = EchoGreen)
                     Spacer(Modifier.width(6.dp))
-                    Text("C'est déjà activé", color = EchoGreen)
+                    Text("C'est activé, continuer", color = EchoGreen)
                 }
+            } else {
+                // Standard button for other steps
+                Button(
+                    onClick = {
+                        when (step) {
+                            OnboardingStep.Welcome -> currentStep++
+                            OnboardingStep.Notification -> {
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                    notifLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                                } else {
+                                    currentStep++
+                                }
+                            }
+                            OnboardingStep.Accessibility -> {
+                                context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
+                                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                })
+                            }
+                            OnboardingStep.BatteryOptimization -> {
+                                try {
+                                    val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                                        Uri.parse("package:${context.packageName}"))
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    context.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+                                }
+                            }
+                            OnboardingStep.DeviceAdmin -> {
+                                val adminComponent = ComponentName(context, EchoVaultDeviceAdminReceiver::class.java)
+                                val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN).apply {
+                                    putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComponent)
+                                    putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION,
+                                        "Nécessaire pour protéger EchoVault contre les arrêts forcés et la désinstallation non autorisée.")
+                                }
+                                overlayLauncher.launch(intent)
+                            }
+                            OnboardingStep.Done -> onComplete()
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = step.color)
+                ) {
+                    Text(step.buttonText, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                }
+
+                // Skip button for optional steps
+                if (step.skippable && step != OnboardingStep.Done) {
+                    Spacer(Modifier.height(12.dp))
+                    TextButton(onClick = { currentStep++ }) {
+                        Text("Passer cette étape", color = MaterialTheme.colorScheme.onSurface.copy(0.5f))
+                    }
+                }
+
+                // "Already done" button for battery step
+                if (step == OnboardingStep.BatteryOptimization) {
+                    Spacer(Modifier.height(4.dp))
+                    TextButton(onClick = { currentStep++ }) {
+                        Icon(Icons.Filled.CheckCircle, null, modifier = Modifier.size(16.dp), tint = EchoGreen)
+                        Spacer(Modifier.width(6.dp))
+                        Text("C'est déjà activé", color = EchoGreen)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AccessibilityStepCard(
+    number: String,
+    title: String,
+    description: String,
+    done: Boolean,
+    color: Color
+) {
+    Surface(
+        shape = RoundedCornerShape(14.dp),
+        color = color.copy(alpha = 0.10f),
+        border = BorderStroke(1.dp, color.copy(alpha = 0.35f)),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(14.dp),
+            verticalAlignment = Alignment.Top,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(28.dp)
+                    .clip(CircleShape)
+                    .background(color),
+                contentAlignment = Alignment.Center
+            ) {
+                if (done) {
+                    Icon(Icons.Filled.Check, null, tint = Color.White, modifier = Modifier.size(16.dp))
+                } else {
+                    Text(number, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                }
+            }
+            Column {
+                Text(title, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = color)
+                Spacer(Modifier.height(4.dp))
+                Text(description, style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(0.7f), lineHeight = 18.sp)
             }
         }
     }
