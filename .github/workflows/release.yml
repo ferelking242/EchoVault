@@ -53,21 +53,18 @@ name: Release
             name: "EchoVault ${{ steps.get_version.outputs.VERSION }}"
             body: |
               ## EchoVault ${{ steps.get_version.outputs.VERSION }}
-
-              ### What's in this release
-              - Ultra-lightweight clipboard history manager
-              - Biometric security (fingerprint + face)
-              - Encrypted storage
-              - Material 3 UI with dark/light mode
+              
+              ### Features
+              - Unlimited clipboard history (text, URLs, emails, OTPs, code)
+              - Biometric lock (fingerprint + face ID)
+              - Encrypted storage with AndroidX Security Crypto
+              - Material 3 UI — dark & light mode
               - Background service with boot persistence
               - Export to TXT, JSON, CSV
-
-              ### Installation
-              Download the APK below and install it on your Android device.
-              You may need to enable "Install from unknown sources" in your settings.
-
+              - Statistics & weekly activity chart
+              
               ### Requirements
-              - Android 8.0 (API 26) or higher
+              Android 8.0+ (API 26)
             files: app/build/outputs/apk/release/*.apk
             draft: false
             prerelease: false
