@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+
 jobs:
   release:
     name: Create Release
@@ -41,7 +44,19 @@ jobs:
           name: EchoVault ${{ github.ref_name }}
           body: |
             ## EchoVault ${{ github.ref_name }}
-            Biometric security, encrypted storage, Material 3 UI, clipboard history manager.
+            Never lose a copy again.
+
+            ### Features
+            - Unlimited clipboard history (text, URLs, emails, OTPs, code snippets)
+            - Biometric lock (fingerprint + face ID)
+            - Encrypted storage with AndroidX Security Crypto
+            - Material 3 UI — dark and light mode with smooth animations
+            - Background service that survives reboots
+            - Export to TXT, JSON, CSV
+            - Statistics with weekly activity chart
+
+            ### Requirements
+            Android 8.0+ (API 26)
           files: app/build/outputs/apk/release/*.apk
           draft: false
           prerelease: false
